@@ -1,45 +1,70 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using TesteDextra.Models;
 using TesteDextra.Repositories.Interfaces;
-using MongoDB.Driver;
-using MongoDB.Bson;
+using TesteDextra.Storage;
+using System.Threading;
 
 namespace TesteDextra.Repositories
 {
-    public class CharactersRepository : ICharactersRepository
+    /// <summary>
+    /// Potter's characters repository
+    /// </summary>
+    public class CharactersRepository : MongoProvider<Character>, ICharactersRepository
     {
-        private readonly IMongoCollection<Character> _collection;
-
+        /// <summary>
+        /// Potter's characters repository constructor
+        /// </summary>
+        /// <param name="configuration"></param>
         public CharactersRepository(IConfiguration configuration)
-        {
-            var client = new MongoClient(configuration.GetConnectionString("PotterDb"));
-            var db = client.GetDatabase("PotterDb");
-            _collection = db.GetCollection<Character>(nameof(Character));
+            : base(configuration.GetConnectionString("PotterDb"), "PotterDb", nameof(Character))
+        { }
 
-        }
-        public bool Create(Character character)
+        /// <summary>
+        /// Creates a new character
+        /// </summary>
+        /// <param name="character"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<bool> CreateAsync(Character character, CancellationToken cancellationToken = default)
         {
-            _collection.InsertOne(character);
+            await base.CreateAsync(character, cancellationToken: cancellationToken);
             return true;
         }
 
-        public Character Get(Guid id) => _collection.Find(p => p.Id == id).FirstOrDefault();
+        /// <summary>
+        /// Gets a character by id.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<Character> GetAsync(Guid id, CancellationToken cancellationToken = default) => await GetAsync(p => p.Id == id, cancellationToken);
 
-        public bool Update(Guid id, Character character) => _collection.ReplaceOne(p => p.Id == id, character).IsAcknowledged;
+        /// <summary>
+        /// Updates a character by Id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="character"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<bool> UpdateAsync(Guid id, Character character, CancellationToken cancellationToken = default) => (await UpdateAsync(p => p.Id == id, character, cancellationToken: cancellationToken)).IsAcknowledged;
 
-        public bool Delete(Guid id) => _collection.DeleteOne(p => p.Id == id).IsAcknowledged;
+        /// <summary>
+        /// Deletes a character by id
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default) => (await DeleteAsync(p => p.Id == id, cancellationToken)).IsAcknowledged;
 
-        public IEnumerable<Character> List(Guid? house = null)
-        {
-            if (house.HasValue)
-            {
-                return _collection.Find(p => p.House == house).ToEnumerable();
-            }
-            return _collection.AsQueryable();
-        }
+
+        /// <summary>
+        /// Gets a list of characters
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<Character>> ListAsync(CancellationToken cancellationToken = default) => await ListAsync(p => true, cancellationToken: cancellationToken);
     }
 }

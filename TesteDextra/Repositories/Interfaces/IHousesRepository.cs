@@ -4,8 +4,15 @@ using TesteDextra.Models;
 
 namespace TesteDextra.Repositories.Interfaces
 {
+    /// <summary>
+    /// Potter's Houses repository
+    /// </summary>
     public interface IHousesRepository
     {
-        IEnumerable<House> GetHouses();
+        /// <summary>
+        /// Gets houses from repository
+        /// </summary>
+        /// <returns></returns>
+        Task<IEnumerable<House>> GetHousesAsync();
     }
 }
